@@ -7,8 +7,7 @@ ENV GROUP_ID=1000 \
 
 WORKDIR /var/www/
 
-ADD . /var/www/
-COPY . /var/www/
+ADD requirements.txt /var/www/requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install gunicorn
 
