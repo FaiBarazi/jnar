@@ -1,0 +1,87 @@
+# Source for this docker compose is at:
+# https://www.digitalocean.com/community/tutorials/how-to-set-up-flask-with-mongodb-and-docker
+version: '3' # refer to : https://docs.docker.com/compose/compose-file/
+
+# Define the different stack services.
+services:
+  # Flask service definition
+  flask:
+    build:
+      context: app
+      dockerfile: Dockerfile
+    container_name: flask
+    image: digitalocean.com/flask-python:3.6
+    restart: unless-stopped
+    environment:
+      APP_ENV: "prod"
+      APP_DEBUG: "True"
+      APP_PORT: 5000
+      MONGODB_DATABASE: flaskdb
+      MONGODB_USERNAME: flaskuser
+      MONGODB_PASSWORD: "flaskpass"
+      MONGODB_HOSTNAME: mongodb
+    volumes:
+      - appdata:/var/www
+    # only runs if mongodb is running
+    depends_on:
+      - mongodb
+    # flask should connect to both the frontend and backend service
+    # front-end being Nginx and back being Mongodbs
+    networks:
+      - frontend
+      - backend
+
+  # Mongodb service definition
+  mongodb:
+    image: mongo:4.0.8
+    container_name: mongodb
+    restart: unless-stopped
+    command: mongod --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongodbuser
+      MONGO_INITDB_ROOT_PASSWORD: "mongodbpass"
+      # This db will be created manually
+      MONGO_INITDB_DATABASE: flaskdb
+      MONGODB_DATA_DIR: /data/db
+      MONDODB_LOG_DIR: /dev/null
+    volumes:
+      - mongodbdata:/data/db
+    networks:
+      - backend
+
+  webserver:
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    image: digitalocean.com/webserver:latest
+    container_name: webserver
+    restart: unless-stopped
+    environment:
+      APP_ENV: "prod"
+      APP_NAME: "webserver"
+      APP_DEBUG: "true"
+      SERVICE_NAME: "webserver"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginxdata:/var/log/nginx
+    depends_on:
+      - flask
+    networks:
+      - frontend
+# Allows the network containers to connect with eact other.
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+# Persisting database to local
+volumes:
+  mongodbdata:
+    driver: local
+  appdata:
+    driver: local
+  nginxdata:
+    driver: local
