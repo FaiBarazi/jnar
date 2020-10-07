@@ -25,7 +25,7 @@ def index():
     return jsonify(
         status=True,
         message=(
-            'I am here and there and everywhere.'
+            'I am up and running, hopefully ...'
         )
     )
 
